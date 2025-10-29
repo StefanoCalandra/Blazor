@@ -1,0 +1,75 @@
+@page "/todo"
+@rendermode InteractiveServer
+
+<h3 class="mb-3">Todo (@ActiveCount)</h3>
+
+<div class="input-group mb-4">
+    <input
+        class="form-control"
+        placeholder="Add a new task"
+        @bind="newTodo"
+        @bind:event="oninput" />
+    <button class="btn btn-primary" @onclick="AddTodo" disabled="@IsAddDisabled">Add Todo</button>
+</div>
+
+@if (todoItems.Count == 0)
+{
+    <p class="text-muted">Add your first task to get started.</p>
+}
+else
+{
+    <ul class="list-unstyled d-flex flex-column gap-2">
+        @foreach (var todo in todoItems)
+        {
+            <li class="d-flex align-items-center gap-2" @key="todo.Id">
+                <input type="checkbox" class="form-check-input" @bind="todo.IsDone" @bind:event="onchange" />
+                <span class="todo-title @(todo.IsDone ? "done" : string.Empty)">@todo.Title</span>
+                <button class="btn btn-link text-danger ms-auto p-0" title="Delete task" @onclick="() => DeleteTodo(todo)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private readonly List<TodoItem> todoItems =
+    [
+        new() { Title = "Study C#" },
+        new() { Title = "Study Blazor" }
+    ];
+
+    private string? newTodo = string.Empty;
+
+    private int ActiveCount => todoItems.Count(todo => !todo.IsDone);
+
+    private bool IsAddDisabled => string.IsNullOrWhiteSpace(newTodo);
+
+    private void AddTodo()
+    {
+        if (string.IsNullOrWhiteSpace(newTodo))
+        {
+            return;
+        }
+
+        todoItems.Add(new TodoItem { Title = newTodo.Trim() });
+        newTodo = string.Empty;
+    }
+
+    private void DeleteTodo(TodoItem todo)
+    {
+        todoItems.Remove(todo);
+    }
+}
+
+<style>
+    .todo-title {
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .done {
+        text-decoration: line-through;
+        color: #6c757d;
+    }
+</style>
