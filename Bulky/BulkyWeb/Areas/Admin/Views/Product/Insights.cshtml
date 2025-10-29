@@ -1,0 +1,105 @@
+@using System.Linq
+@model ProductInsightsVM
+
+<div class="card shadow border-0 my-4">
+    <div class="card-header bg-secondary bg-gradient ml-0 py-3">
+        <div class="row">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <h2 class="text-white py-2 mb-0">Catalog Insights</h2>
+                <a asp-action="Index" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Back to list
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        <div class="row g-3 mb-4 text-center text-md-start">
+            <div class="col-12 col-md-4">
+                <div class="p-3 border rounded h-100 bg-light">
+                    <h5 class="text-muted text-uppercase">Total products</h5>
+                    <p class="display-6 fw-semibold mb-0">@Model.TotalProducts</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="p-3 border rounded h-100 bg-light">
+                    <h5 class="text-muted text-uppercase">Average price</h5>
+                    <p class="display-6 fw-semibold mb-0">@FormatCurrency(Model.AveragePrice)</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="p-3 border rounded h-100 bg-light">
+                    <h5 class="text-muted text-uppercase">Price range</h5>
+                    <p class="display-6 fw-semibold mb-0">
+                        @FormatCurrency(Model.MinPrice)
+                        <span class="text-muted">–</span>
+                        @FormatCurrency(Model.MaxPrice)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-7">
+                <h4 class="mb-3">Products by category</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th scope="col">Category</th>
+                                <th scope="col" class="text-end">Products</th>
+                                <th scope="col" class="text-end">Average price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.CategoryBreakdown.Any())
+                            {
+                                foreach (var category in Model.CategoryBreakdown)
+                                {
+                                    <tr>
+                                        <td>@category.CategoryName</td>
+                                        <td class="text-end">@category.ProductCount</td>
+                                        <td class="text-end">@FormatCurrency(category.AveragePrice)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No products available.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-12 col-lg-5">
+                <h4 class="mb-3">Price distribution</h4>
+                <ul class="list-group">
+                    @if (Model.PriceDistribution.Any())
+                    {
+                        foreach (var bucket in Model.PriceDistribution)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@bucket.Label</span>
+                                <span class="badge bg-primary rounded-pill">@bucket.ProductCount</span>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-center text-muted">No products available.</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string FormatCurrency(double? value)
+    {
+        return value.HasValue
+            ? string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", value.Value)
+            : "—";
+    }
+}
