@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-labelledby="title desc">
+  <title>Image unavailable</title>
+  <desc>Placeholder graphic shown when a product image is missing.</desc>
+  <rect width="400" height="400" fill="#f3f4f6" />
+  <path d="M60 300l80-100 70 80 60-60 70 80" fill="none" stroke="#9ca3af" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="140" cy="140" r="40" fill="none" stroke="#9ca3af" stroke-width="12" />
+  <text x="200" y="360" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="32" fill="#9ca3af">No Image</text>
+</svg>
