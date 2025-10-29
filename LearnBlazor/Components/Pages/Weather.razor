@@ -1,0 +1,73 @@
+﻿@page "/weather"
+@inject LearnBlazor.Services.WeatherForecastService ForecastService
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates showing data.</p>
+
+@if (isLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+else if (forecasts is { Count: > 0 })
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Temp. (C)</th>
+                <th scope="col">Temp. (F)</th>
+                <th scope="col">Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No forecast data available.</p>
+}
+
+@code {
+    private IReadOnlyList<WeatherForecast>? forecasts;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            forecasts = await ForecastService.GetForecastAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            errorMessage = "The weather request was canceled.";
+        }
+        catch (Exception)
+        {
+            errorMessage = "Unable to load the weather forecast right now. Please try again later.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
