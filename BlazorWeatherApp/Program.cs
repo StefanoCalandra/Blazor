@@ -7,8 +7,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("WeatherApi"));
-builder.Services.AddHttpClient<WeatherService>((sp, client) =>{
+builder.Services.AddOptions<WeatherApiOptions>()
+    .Bind(builder.Configuration.GetSection("WeatherApi"))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IValidateOptions<WeatherApiOptions>, WeatherApiOptionsValidator>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<WeatherService>((sp, client) =>
+{
     var options = sp.GetRequiredService<IOptions<WeatherApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
 });

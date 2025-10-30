@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using LearnBlazor.Models;
@@ -21,12 +22,32 @@ public class WeatherForecastService
 
         var forecasts = Enumerable
             .Range(1, 5)
-            .Select(index => new WeatherForecast(
-                startDate.AddDays(index),
-                Random.Shared.Next(-20, 55),
-                Summaries[Random.Shared.Next(Summaries.Length)]))
+            .Select(index => CreateForecast(startDate.AddDays(index)))
             .ToArray();
 
         return forecasts;
     }
+
+    public async IAsyncEnumerable<WeatherForecast> StreamForecastAsync(
+        int updates = 5,
+        TimeSpan? interval = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        interval ??= TimeSpan.FromSeconds(1);
+        var startDate = DateOnly.FromDateTime(DateTime.Now);
+
+        for (var index = 0; index < updates; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await Task.Delay(interval.Value, cancellationToken);
+
+            yield return CreateForecast(startDate.AddDays(index));
+        }
+    }
+
+    private static WeatherForecast CreateForecast(DateOnly date) => new(
+        date,
+        Random.Shared.Next(-20, 55),
+        Summaries[Random.Shared.Next(Summaries.Length)]);
 }
