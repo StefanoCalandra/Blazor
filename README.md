@@ -16,17 +16,6 @@ This repository now provides a single entry point for all of the sample applicat
 | **LearnBlazor** | `LearnBlazor/LearnBlazor.csproj` | Collection of learning-focused Blazor components and helpers. |
 | **TodoList** | `TodoList/TodoList.csproj` | Simple todo tracking application showcasing CRUD operations. |
 
-## Improvement ideas
-
-Looking for ways to extend the samples or ensure each one stays focused on a unique scenario? Check out the [Blazor Suite Improvement Roadmap](docs/project-improvement-roadmap.md) for curated enhancement ideas and differentiation tips across all projects.
-
-## Recent highlights
-
-- **BlazorWeatherApp** now caches results, validates configuration on startup, and can hydrate the dashboard from the browser's current location to emphasize resilient API integration.
-- **LearnBlazor** turned its weather page into an interactive lab that demonstrates snapshot fetching, streaming updates, and cancelable background refresh loops.
-- **YumBlazor** replaced the placeholder weather screen with a meal-planning workspace that reacts to pantry inventory and focus preferences.
-- **TodoList** persists tasks to protected local storage, tracks due dates, and supports tag-based filtering so it can act as a richer companion to the backend samples.
-
 ## Getting started
 
 1. Restore dependencies and build the desired project:
