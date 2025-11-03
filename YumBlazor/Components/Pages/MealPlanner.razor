@@ -1,0 +1,425 @@
+@page "/meal-planner"
+
+<PageTitle>Meal planner</PageTitle>
+
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-xxl-4">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Pantry inventory</span>
+                    <span class="badge bg-primary">@PantryCoveragePercent% stocked</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Toggle the ingredients you have on hand to see how it affects the weekly plan and recipe suggestions.</p>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var item in pantryItems)
+                        {
+                            <li class="list-group-item d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="fw-semibold">@item.Name</div>
+                                    <div class="text-muted small">@item.Category</div>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" checked="@item.InStock" @onchange="(ChangeEventArgs _) => TogglePantry(item)" />
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-header">Meal focus</div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Select a focus to personalize recommendations. Balanced recipes are always considered to keep variety.</p>
+                    <select class="form-select"
+                            @bind="selectedFocus"
+                            @bind:event="onchange"
+                            @bind:after="OnFocusChanged">
+                        @foreach (var focus in Enum.GetValues<MealFocus>())
+                        {
+                            <option value="@focus">@FormatFocus(focus)</option>
+                        }
+                    </select>
+                    <p class="mt-3 mb-0 small">@FocusDescription</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xxl-8">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Weekly dinner plan</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" @onclick="ShuffleMealPlan">Shuffle ideas</button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetPantry">Reset pantry</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Day</th>
+                                    <th scope="col">Meal</th>
+                                    <th scope="col">Main</th>
+                                    <th scope="col">Pairing</th>
+                                    <th scope="col">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in mealPlan)
+                                {
+                                    <tr>
+                                        <th scope="row">@entry.Day</th>
+                                        <td>@entry.MealType</td>
+                                        <td>
+                                            <div class="fw-semibold">@entry.Main</div>
+                                            <span class="badge @(entry.PantryReady ? "bg-success" : "bg-warning text-dark")">@(entry.PantryReady ? "Pantry ready" : "Missing items")</span>
+                                        </td>
+                                        <td>@entry.Side</td>
+                                        <td class="small text-muted">@entry.Note</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Smart recipe suggestions</span>
+                    <span class="badge bg-secondary">@recipeSuggestions.Count suggestion@(recipeSuggestions.Count == 1 ? string.Empty : "s")</span>
+                </div>
+                <div class="card-body">
+                    @if (recipeSuggestions.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Add a few more pantry staples or adjust the focus to unlock tailored recipes.</p>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var suggestion in recipeSuggestions)
+                            {
+                                <div class="border rounded-3 p-3">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div>
+                                            <h3 class="h5 mb-1">@suggestion.Name</h3>
+                                            <p class="text-muted small mb-2">@suggestion.Summary</p>
+                                            <p class="mb-1"><strong>Ready in:</strong> @suggestion.ReadyIn</p>
+                                            <p class="mb-1"><strong>Pair with:</strong> @suggestion.SuggestedSide</p>
+                                        </div>
+                                        <span class="badge @(suggestion.IsPantryReady ? "bg-success" : "bg-warning text-dark")">@suggestion.CoveragePercent% pantry match</span>
+                                    </div>
+                                    <p class="mb-0 small">
+                                        <strong>Pantry check:</strong>
+                                        @if (suggestion.IsPantryReady)
+                                        {
+                                            <span>Everything you need is already stocked.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Missing @string.Join(", ", suggestion.MissingIngredients).</span>
+                                        }
+                                    </p>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly List<PantryItem> pantryItems =
+    [
+        new("Chicken Breast", "Protein", true),
+        new("Salmon Fillets", "Protein", true),
+        new("Chickpeas", "Plant protein", true),
+        new("Sweet Potatoes", "Produce", true),
+        new("Quinoa", "Grains", true),
+        new("Brown Rice", "Grains", false),
+        new("Spinach", "Produce", false),
+        new("Greek Yogurt", "Dairy", true),
+        new("Avocado", "Produce", false),
+        new("Whole Wheat Tortillas", "Pantry", true)
+    ];
+
+    private readonly List<MealPlanEntry> mealPlan =
+    [
+        new(DayOfWeek.Monday, "Dinner", "Herb roasted chicken", "Garlic green beans"),
+        new(DayOfWeek.Tuesday, "Dinner", "Salmon with citrus glaze", "Roasted asparagus"),
+        new(DayOfWeek.Wednesday, "Dinner", "Chickpea power bowls", "Toasted pita"),
+        new(DayOfWeek.Thursday, "Dinner", "Stuffed sweet potatoes", "Mixed greens"),
+        new(DayOfWeek.Friday, "Dinner", "Quinoa taco night", "Fire-roasted corn"),
+        new(DayOfWeek.Saturday, "Dinner", "Grilled flatbreads", "Greek salad"),
+        new(DayOfWeek.Sunday, "Dinner", "Slow cooker stew", "Crusty bread")
+    ];
+
+    private readonly List<RecipeDefinition> recipeLibrary =
+    [
+        new()
+        {
+            Name = "Lemon herb chicken",
+            Focus = MealFocus.Balanced,
+            ReadyIn = "35 minutes",
+            Summary = "Roasted chicken breasts brightened with lemon zest and thyme.",
+            Ingredients = new[] { "Chicken Breast", "Lemon", "Thyme", "Garlic" },
+            SuggestedSide = "Garlic green beans"
+        },
+        new()
+        {
+            Name = "Maple glazed salmon",
+            Focus = MealFocus.HighProtein,
+            ReadyIn = "25 minutes",
+            Summary = "Salmon fillets roasted with maple, soy, and ginger.",
+            Ingredients = new[] { "Salmon Fillets", "Maple Syrup", "Soy Sauce", "Ginger" },
+            SuggestedSide = "Sesame snap peas"
+        },
+        new()
+        {
+            Name = "Chickpea shawarma bowls",
+            Focus = MealFocus.Vegetarian,
+            ReadyIn = "30 minutes",
+            Summary = "Sheet-pan chickpeas with warm spices served over quinoa.",
+            Ingredients = new[] { "Chickpeas", "Quinoa", "Spinach", "Cucumber" },
+            SuggestedSide = "Toasted pita"
+        },
+        new()
+        {
+            Name = "Sweet potato tacos",
+            Focus = MealFocus.Balanced,
+            ReadyIn = "40 minutes",
+            Summary = "Roasted sweet potatoes tucked into tortillas with creamy slaw.",
+            Ingredients = new[] { "Sweet Potatoes", "Whole Wheat Tortillas", "Greek Yogurt", "Cabbage" },
+            SuggestedSide = "Fire-roasted corn"
+        },
+        new()
+        {
+            Name = "Citrus shrimp bowls",
+            Focus = MealFocus.HighProtein,
+            ReadyIn = "35 minutes",
+            Summary = "Bright shrimp bowls layered with quinoa and citrus vinaigrette.",
+            Ingredients = new[] { "Shrimp", "Quinoa", "Avocado", "Orange" },
+            SuggestedSide = "Charred broccoli"
+        },
+        new()
+        {
+            Name = "Mediterranean flatbreads",
+            Focus = MealFocus.Vegetarian,
+            ReadyIn = "20 minutes",
+            Summary = "Quick toasted flatbreads with hummus, tomatoes, and feta.",
+            Ingredients = new[] { "Whole Wheat Tortillas", "Chickpeas", "Tomatoes", "Spinach" },
+            SuggestedSide = "Greek salad"
+        },
+        new()
+        {
+            Name = "Slow cooker lentil stew",
+            Focus = MealFocus.FamilyStyle,
+            ReadyIn = "6 hours",
+            Summary = "Comforting lentils simmered with vegetables for make-ahead ease.",
+            Ingredients = new[] { "Lentils", "Carrots", "Celery", "Onion" },
+            SuggestedSide = "Crusty bread"
+        }
+    ];
+
+    private readonly List<RecipeSuggestion> recipeSuggestions = new();
+
+    private MealFocus selectedFocus = MealFocus.Balanced;
+
+    private int PantryCoveragePercent => (int)Math.Round((double)pantryItems.Count(item => item.InStock) / Math.Max(pantryItems.Count, 1) * 100);
+
+    private string FocusDescription => selectedFocus switch
+    {
+        MealFocus.HighProtein => "High-protein meals prioritize lean meats and hearty legumes.",
+        MealFocus.Vegetarian => "Vegetarian ideas spotlight plants without sacrificing flavor.",
+        MealFocus.FamilyStyle => "Family-style meals scale easily and welcome leftovers.",
+        _ => "Balanced keeps variety while leaning on pantry-friendly staples."
+    };
+
+    protected override void OnInitialized()
+    {
+        RecalculateSuggestions();
+    }
+
+    private void TogglePantry(PantryItem item)
+    {
+        item.InStock = !item.InStock;
+        RecalculateSuggestions();
+    }
+
+    private void ShuffleMealPlan()
+    {
+        var stocked = pantryItems.Where(p => p.InStock).Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var pool = recipeSuggestions.Count > 0
+            ? recipeSuggestions.ToList()
+            : recipeLibrary.Select(recipe => BuildSuggestion(recipe, stocked)).ToList();
+
+        var randomized = pool.OrderBy(_ => Random.Shared.Next()).ToList();
+
+        for (var i = 0; i < mealPlan.Count; i++)
+        {
+            var suggestion = randomized[i % randomized.Count];
+            ApplySuggestion(mealPlan[i], suggestion);
+        }
+
+        StateHasChanged();
+    }
+
+    private void ResetPantry()
+    {
+        foreach (var item in pantryItems)
+        {
+            item.InStock = item.DefaultInStock;
+        }
+
+        RecalculateSuggestions();
+    }
+
+    private void OnFocusChanged()
+    {
+        RecalculateSuggestions();
+    }
+
+    private void RecalculateSuggestions()
+    {
+        var stocked = pantryItems.Where(p => p.InStock).Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        recipeSuggestions.Clear();
+
+        foreach (var recipe in recipeLibrary)
+        {
+            if (recipe.Focus != MealFocus.Balanced && recipe.Focus != selectedFocus)
+            {
+                continue;
+            }
+
+            var suggestion = BuildSuggestion(recipe, stocked);
+            recipeSuggestions.Add(suggestion);
+        }
+
+        recipeSuggestions.Sort((a, b) =>
+        {
+            var coverageComparison = b.CoveragePercent.CompareTo(a.CoveragePercent);
+            return coverageComparison != 0 ? coverageComparison : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        });
+
+        if (recipeSuggestions.Count > 6)
+        {
+            recipeSuggestions.RemoveRange(6, recipeSuggestions.Count - 6);
+        }
+
+        UpdateMealPlan(stocked);
+        StateHasChanged();
+    }
+
+    private RecipeSuggestion BuildSuggestion(RecipeDefinition recipe, HashSet<string> stocked)
+    {
+        var missing = recipe.Ingredients
+            .Where(ingredient => !stocked.Contains(ingredient))
+            .ToList();
+
+        var availableCount = recipe.Ingredients.Length - missing.Count;
+
+        return new RecipeSuggestion(
+            recipe.Name,
+            recipe.Focus,
+            recipe.ReadyIn,
+            recipe.Summary,
+            recipe.Ingredients,
+            missing,
+            availableCount,
+            recipe.SuggestedSide);
+    }
+
+    private void UpdateMealPlan(HashSet<string> stocked)
+    {
+        var pool = recipeSuggestions.Count > 0
+            ? recipeSuggestions
+            : recipeLibrary.Select(recipe => BuildSuggestion(recipe, stocked)).ToList();
+
+        for (var i = 0; i < mealPlan.Count; i++)
+        {
+            var suggestion = pool[i % pool.Count];
+            ApplySuggestion(mealPlan[i], suggestion);
+        }
+    }
+
+    private static void ApplySuggestion(MealPlanEntry entry, RecipeSuggestion suggestion)
+    {
+        entry.Main = suggestion.Name;
+        entry.Side = suggestion.SuggestedSide;
+        entry.PantryReady = suggestion.IsPantryReady;
+        entry.Note = suggestion.IsPantryReady
+            ? $"Ready in {suggestion.ReadyIn} with ingredients on hand."
+            : $"Missing: {string.Join(", ", suggestion.MissingIngredients)}";
+    }
+
+    private string FormatFocus(MealFocus focus) => focus switch
+    {
+        MealFocus.HighProtein => "High protein",
+        MealFocus.FamilyStyle => "Family style",
+        _ => focus.ToString()
+    };
+
+    private sealed record PantryItem(string Name, string Category, bool DefaultInStock)
+    {
+        public bool InStock { get; set; } = DefaultInStock;
+    }
+
+    private sealed class MealPlanEntry
+    {
+        public MealPlanEntry(DayOfWeek day, string mealType, string main, string side)
+        {
+            Day = day;
+            MealType = mealType;
+            Main = main;
+            Side = side;
+        }
+
+        public DayOfWeek Day { get; }
+        public string MealType { get; }
+        public string Main { get; set; }
+        public string Side { get; set; }
+        public bool PantryReady { get; set; }
+        public string? Note { get; set; }
+    }
+
+    private sealed class RecipeDefinition
+    {
+        public required string Name { get; init; }
+        public MealFocus Focus { get; init; }
+        public required string ReadyIn { get; init; }
+        public required string Summary { get; init; }
+        public required string[] Ingredients { get; init; }
+        public required string SuggestedSide { get; init; }
+    }
+
+    private sealed record RecipeSuggestion(
+        string Name,
+        MealFocus Focus,
+        string ReadyIn,
+        string Summary,
+        IReadOnlyList<string> RequiredIngredients,
+        IReadOnlyList<string> MissingIngredients,
+        int IngredientsAvailable,
+        string SuggestedSide)
+    {
+        public bool IsPantryReady => MissingIngredients.Count == 0;
+        public int CoveragePercent => RequiredIngredients.Count == 0
+            ? 100
+            : (int)Math.Round(IngredientsAvailable / (double)RequiredIngredients.Count * 100);
+    }
+
+    private enum MealFocus
+    {
+        Balanced,
+        HighProtein,
+        Vegetarian,
+        FamilyStyle
+    }
+}
