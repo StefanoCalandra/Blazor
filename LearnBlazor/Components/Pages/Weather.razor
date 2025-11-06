@@ -1,73 +1,288 @@
-﻿@page "/weather"
+@page "/weather"
 @inject LearnBlazor.Services.WeatherForecastService ForecastService
 
-<PageTitle>Weather</PageTitle>
+<PageTitle>Laboratorio meteo</PageTitle>
 
-<h1>Weather</h1>
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h1 class="h3">Laboratorio interattivo per imparare il meteo</h1>
+                    <p class="text-muted">Scopri come Blazor gestisce il recupero asincrono dei dati, gli aggiornamenti in streaming e i lavori annullabili senza lasciare questa pagina.</p>
 
-<p>This component demonstrates showing data.</p>
+                    <div class="btn-toolbar gap-2 flex-wrap" role="group" aria-label="Controlli del laboratorio meteo">
+                        <button class="btn btn-primary" @onclick="LoadSnapshotAsync" disabled="@isLoading">Carica istantanea</button>
+                        <button class="btn btn-outline-primary" @onclick="StartStreamingAsync" disabled="@isLoading">Avvia streaming</button>
+                        <button class="btn btn-outline-success" @onclick="ToggleAutoRefreshAsync" disabled="@isLoading && !isAutoRefreshing">
+                            @(isAutoRefreshing ? "Interrompi aggiornamento automatico" : "Avvia aggiornamento automatico")
+                        </button>
+                        <button class="btn btn-link text-danger" @onclick="CancelCurrentOperationAsync" disabled="@(!IsCancelable)">Annulla</button>
+                    </div>
 
-@if (isLoading)
-{
-    <p><em>Loading...</em></p>
-}
-else if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger" role="alert">
-        @errorMessage
+                    <div class="row g-3 mt-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="intervalInput">Intervallo aggiornamento automatico (secondi)</label>
+                            <InputNumber id="intervalInput"
+                                         class="form-control"
+                                         @bind-Value="autoRefreshIntervalSeconds"
+                                         min="5"
+                                         max="60"
+                                         step="5"
+                                         disabled="@isAutoRefreshing" />
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="liveUpdates" checked disabled />
+                                <label class="form-check-label" for="liveUpdates">Aggiornamento dell'interfaccia all'arrivo dei dati</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        @if (isLoading)
+                        {
+                            <div class="alert alert-info d-flex align-items-center gap-2" role="status">
+                                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                                <span>@statusMessage</span>
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(statusMessage))
+                        {
+                            <div class="alert alert-secondary" role="status">@statusMessage</div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">@errorMessage</div>
+                        }
+                    </div>
+
+                    @if (forecasts.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Esegui una delle azioni sopra per popolare la tabella con i dati meteo.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive mt-3">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Data</th>
+                                        <th scope="col">Temp. (°C)</th>
+                                        <th scope="col">Temp. (°F)</th>
+                                        <th scope="col">Sintesi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var forecast in forecasts)
+                                    {
+                                        <tr>
+                                            <td>@forecast.Date.ToString("d MMM")</td>
+                                            <td>@forecast.TemperatureC</td>
+                                            <td>@forecast.TemperatureF</td>
+                                            <td>@forecast.Summary</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Registro eventi</span>
+                        <span class="badge bg-secondary">più recenti in alto</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (eventLog.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Gli eventi compariranno qui mentre provi i diversi scenari.</p>
+                    }
+                    else
+                    {
+                        <ol class="list-group list-group-numbered">
+                            @foreach (var entry in eventLog)
+                            {
+                                <li class="list-group-item">@entry</li>
+                            }
+                        </ol>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
-}
-else if (forecasts is { Count: > 0 })
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Temp. (C)</th>
-                <th scope="col">Temp. (F)</th>
-                <th scope="col">Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p>No forecast data available.</p>
-}
+</div>
 
 @code {
-    private IReadOnlyList<WeatherForecast>? forecasts;
-    private bool isLoading = true;
-    private string? errorMessage;
+    private readonly List<WeatherForecast> forecasts = new();
+    private readonly List<string> eventLog = new();
 
-    protected override async Task OnInitializedAsync()
+    private CancellationTokenSource? currentOperationCts;
+    private string? statusMessage;
+    private string? errorMessage;
+    private bool isLoading;
+    private bool isStreaming;
+    private bool isAutoRefreshing;
+    private int autoRefreshIntervalSeconds = 15;
+
+    private bool IsCancelable => currentOperationCts is { IsCancellationRequested: false };
+
+    private Task LoadSnapshotAsync() => ExecuteOperationAsync(async cancellationToken =>
     {
+        var snapshot = await ForecastService.GetForecastAsync(cancellationToken);
+        await UpdateUiAsync(() =>
+        {
+            forecasts.Clear();
+            forecasts.AddRange(snapshot);
+            PushEvent($"Istantanea caricata alle {DateTime.Now:T}");
+            statusMessage = "Istantanea caricata dal servizio.";
+        });
+    }, "Caricamento di un'unica istantanea...");
+
+    private Task StartStreamingAsync() => ExecuteOperationAsync(async cancellationToken =>
+    {
+        isStreaming = true;
+        await UpdateUiAsync(() =>
+        {
+            forecasts.Clear();
+            PushEvent($"Streaming avviato alle {DateTime.Now:T}");
+            statusMessage = "In attesa degli aggiornamenti in streaming...";
+        });
+
+        var updateNumber = 0;
+        await foreach (var forecast in ForecastService.StreamForecastAsync(6, TimeSpan.FromMilliseconds(750), cancellationToken))
+        {
+            updateNumber++;
+            await UpdateUiAsync(() =>
+            {
+                forecasts.Add(forecast);
+                PushEvent($"Aggiornamento #{updateNumber} ricevuto per {forecast.Date:d MMM}");
+                statusMessage = $"Aggiornamento in streaming {updateNumber} di 6.";
+            });
+        }
+
+        await UpdateUiAsync(() =>
+        {
+            statusMessage = "Streaming completato.";
+        });
+    }, "Streaming delle previsioni in corso...");
+
+    private Task ToggleAutoRefreshAsync()
+    {
+        if (isAutoRefreshing)
+        {
+            CancelCurrentOperation();
+            return Task.CompletedTask;
+        }
+
+        return ExecuteOperationAsync(RunAutoRefreshAsync, $"Aggiornamento automatico ogni {autoRefreshIntervalSeconds} secondi...");
+    }
+
+    private async Task RunAutoRefreshAsync(CancellationToken cancellationToken)
+    {
+        isAutoRefreshing = true;
+        await UpdateUiAsync(() =>
+        {
+            PushEvent($"Aggiornamento automatico avviato alle {DateTime.Now:T} (ogni {autoRefreshIntervalSeconds}s)");
+            statusMessage = "Aggiornamento automatico in esecuzione.";
+        });
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var snapshot = await ForecastService.GetForecastAsync(cancellationToken);
+            await UpdateUiAsync(() =>
+            {
+                forecasts.Clear();
+                forecasts.AddRange(snapshot);
+                PushEvent($"Istantanea aggiornata alle {DateTime.Now:T}");
+                statusMessage = $"Istantanea aggiornata alle {DateTime.Now:T}.";
+            });
+
+            await Task.Delay(TimeSpan.FromSeconds(autoRefreshIntervalSeconds), cancellationToken);
+        }
+    }
+
+    private Task CancelCurrentOperationAsync()
+    {
+        CancelCurrentOperation();
+        return Task.CompletedTask;
+    }
+
+    private async Task ExecuteOperationAsync(Func<CancellationToken, Task> operation, string startMessage)
+    {
+        CancelCurrentOperation();
+
+        var cts = new CancellationTokenSource();
+        currentOperationCts = cts;
+        isLoading = true;
+        statusMessage = startMessage;
+        errorMessage = null;
+        await InvokeAsync(StateHasChanged);
+
         try
         {
-            forecasts = await ForecastService.GetForecastAsync();
+            await operation(cts.Token);
         }
         catch (OperationCanceledException)
         {
-            errorMessage = "The weather request was canceled.";
+            await UpdateUiAsync(() =>
+            {
+                statusMessage = "Operazione annullata.";
+                PushEvent($"Operazione annullata alle {DateTime.Now:T}");
+            });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            errorMessage = "Unable to load the weather forecast right now. Please try again later.";
+            await UpdateUiAsync(() =>
+            {
+                errorMessage = $"Qualcosa è andato storto: {ex.Message}";
+                PushEvent($"Errore: {ex.Message}");
+            });
         }
         finally
         {
             isLoading = false;
+            isStreaming = false;
+            isAutoRefreshing = false;
+
+            if (ReferenceEquals(currentOperationCts, cts))
+            {
+                currentOperationCts = null;
+            }
+
+            cts.Dispose();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void CancelCurrentOperation()
+    {
+        if (currentOperationCts is { IsCancellationRequested: false })
+        {
+            currentOperationCts.Cancel();
+        }
+    }
+
+    private Task UpdateUiAsync(Action action) => InvokeAsync(() =>
+    {
+        action();
+        StateHasChanged();
+    });
+
+    private void PushEvent(string message)
+    {
+        eventLog.Insert(0, message);
+
+        if (eventLog.Count > 12)
+        {
+            eventLog.RemoveAt(eventLog.Count - 1);
         }
     }
 }

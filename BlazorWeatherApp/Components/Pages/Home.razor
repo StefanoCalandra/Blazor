@@ -1,41 +1,282 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @inject WeatherService WeatherService
-  
-<PageTitle>Home</PageTitle>
-<div class="container">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-             <div class="card">
+@inject IJSRuntime JSRuntime
+@inject IOptionsSnapshot<WeatherApiOptions> WeatherOptions
+@using System.Text.Json.Serialization
+
+<PageTitle>Meteo</PageTitle>
+
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                     <h3 class="card-title">Weather App Search</h3>
-                     <div class="input-group mb-3">
-                        <input @bind ="city" class="form-control">
-                        <button @onclick="GetWeather" class="btn btn-primary">Search</button>
+                    <h2 class="card-title h4 mb-3">Condizioni in tempo reale</h2>
+                    <p class="text-muted">Cerca una città, ripiega su quella predefinita configurata oppure consenti al browser di condividere le coordinate per provare le ricerche basate sulla posizione.</p>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="cityInput">Città</label>
+                        <input id="cityInput"
+                               class="form-control"
+                               placeholder="@SearchPlaceholder"
+                               @bind="city"
+                               @bind:event="oninput"
+                               autocomplete="off"
+                               disabled="@IsBusy" />
                     </div>
-                    @if(weatherResponse != null){
-                    <div>
-                        <h4> @weatherResponse.Location.Name</h4>
-                       <p> Temperature: @weatherResponse.Current.Temp_C</p>
-                       <p>Condition: @weatherResponse.Current.Condition.Text</p>
-                        <p>Wind: @weatherResponse.Current.Wind_Kph km/h (@weatherResponse.Current.Wind_Mph mph) from @weatherResponse.Current.Wind_Dir</p>
-                        <p>Humidity: @weatherResponse.Current.Humidity%</p>
-                           <img src="@("https:" + weatherResponse.Current.Condition.Icon)" alt="" />
-                 
 
-                  </div>
-                    } 
+                    <div class="form-check form-switch mb-3">
+                        <input id="cacheSwitch" class="form-check-input" type="checkbox" @bind="bypassCache" disabled="@IsBusy" />
+                        <label class="form-check-label" for="cacheSwitch">Ignora i risultati in cache</label>
+                    </div>
 
-                  </div>
-             </div>
-    </div>
+                    <div class="btn-group flex-wrap w-100" role="group" aria-label="Azioni meteo">
+                        <button class="btn btn-primary flex-grow-1"
+                                @onclick="SearchAsync"
+                                disabled="@IsBusy">Cerca</button>
+                        <button class="btn btn-outline-secondary flex-grow-1"
+                                @onclick="UseDefaultCityAsync"
+                                disabled="@IsBusy">Usa predefinita</button>
+                        <button class="btn btn-outline-success flex-grow-1"
+                                @onclick="UseMyLocationAsync"
+                                disabled="@IsBusy">Usa la mia posizione</button>
+                        <button class="btn btn-link text-danger"
+                                @onclick="CancelRequestAsync"
+                                disabled="@(!CanCancel)">Annulla</button>
+                    </div>
+
+                    <div class="mt-3">
+                        @if (isLoading)
+                        {
+                            <div class="alert alert-info d-flex align-items-center gap-2 mb-2" role="status">
+                                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                                <span>@statusMessage</span>
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(statusMessage))
+                        {
+                            <div class="alert alert-secondary mb-2" role="status">@statusMessage</div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">@errorMessage</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (lastCoordinates is not null)
+            {
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body">
+                        <h3 class="card-title h5 mb-2">Contesto posizione</h3>
+                        <p class="mb-0 text-muted">Coordinate del browser: <strong>@lastCoordinates</strong></p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-7">
+            @if (weatherResult is null)
+            {
+                <div class="d-flex h-100 align-items-center justify-content-center text-muted border border-2 border-secondary-subtle rounded-3 p-4">
+                    <div class="text-center">
+                        <i class="bi bi-cloud-sun display-5 d-block mb-3"></i>
+                        <p class="mb-0">Esegui una ricerca o prova la città predefinita per vedere le condizioni attuali.</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3">
+                            <div>
+                                <h2 class="card-title h3 mb-0">@weatherResult.Response.Location.Name</h2>
+                                <p class="text-muted mb-0">@weatherResult.Response.Location.Region, @weatherResult.Response.Location.Country</p>
+                                <p class="text-muted small mb-0">Aggiornato @weatherResult.RetrievedAt.ToLocalTime():g (@(weatherResult.FromCache ? "cache" : "diretta"))</p>
+                            </div>
+                            <div class="display-5 fw-semibold text-primary">@weatherResult.Response.Current.Temp_C&deg;C</div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <h3 class="h6 text-uppercase text-muted">Condizioni</h3>
+                                    <p class="fs-5 mb-1">@weatherResult.Response.Current.Condition.Text</p>
+                                    <p class="mb-0 text-muted">Percepita @weatherResult.Response.Current.Feelslike_C&deg;C | Vento @weatherResult.Response.Current.Wind_Kph km/h</p>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <h3 class="h6 text-uppercase text-muted">Dettagli atmosferici</h3>
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li><strong>Umidità:</strong> @($"{weatherResult.Response.Current.Humidity}%")</li>
+                                        <li><strong>Visibilità:</strong> @weatherResult.Response.Current.Vis_Km km</li>
+                                        <li><strong>Copertura nuvolosa:</strong> @($"{weatherResult.Response.Current.Cloud}%")</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <span class="badge rounded-pill @(weatherResult.FromCache ? "bg-secondary" : "bg-success")">
+                                @(weatherResult.FromCache ? "Servito dalla cache" : "Dati aggiornati dall'API")
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(city))
+                            {
+                                <span class="badge rounded-pill bg-light text-dark ms-2">Ricerca: @city</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 </div>
-@code{
 
-private string city = "";
-private WeatherResponse? weatherResponse;
-async Task GetWeather(){
-     weatherResponse = await WeatherService.GetWeatherAsync(city);
+@code {
+    private const int RequestTimeoutSeconds = 10;
+
+    private string city = string.Empty;
+    private WeatherResult? weatherResult;
+    private GeoCoordinates? lastCoordinates;
+    private bool bypassCache;
+    private bool isLoading;
+    private bool isLocating;
+    private string? statusMessage;
+    private string? errorMessage;
+    private CancellationTokenSource? requestCts;
+
+    private bool IsBusy => isLoading || isLocating;
+    private bool CanCancel => requestCts is not null && !requestCts.IsCancellationRequested;
+    private string SearchPlaceholder => WeatherOptions.Value.DefaultCity is { Length: > 0 } configured
+        ? $"Prova \"{configured}\" o un'altra città"
+        : "Inserisci una città (es. Milano)";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UseDefaultCityAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(city))
+        {
+            errorMessage = "Inserisci il nome di una città per cercare il meteo.";
+            statusMessage = null;
+            return;
+        }
+
+        lastCoordinates = null;
+        await ExecuteRequestAsync(
+            ct => WeatherService.GetWeatherAsync(city, bypassCache, ct),
+            $"Caricamento delle condizioni attuali per {city.Trim()}...");
+    }
+
+    private Task UseDefaultCityAsync() => ExecuteRequestAsync(
+        ct => WeatherService.GetDefaultCityWeatherAsync(bypassCache, ct),
+        WeatherOptions.Value.DefaultCity is { Length: > 0 } configured
+            ? $"Caricamento della città predefinita configurata ({configured})..."
+            : "Caricamento della città predefinita...");
+
+    private async Task UseMyLocationAsync()
+    {
+        if (isLocating)
+        {
+            return;
+        }
+
+        isLocating = true;
+        statusMessage = "Richiesta della posizione dal browser...";
+        errorMessage = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var coordinates = await JSRuntime.InvokeAsync<BrowserCoordinates>("appGeo.getCurrentPosition");
+            lastCoordinates = new GeoCoordinates(coordinates.Latitude, coordinates.Longitude, coordinates.Accuracy);
+
+            await ExecuteRequestAsync(
+                ct => WeatherService.GetWeatherForCoordinatesAsync(lastCoordinates.Value, bypassCache, ct),
+                $"Caricamento del meteo per la tua posizione attuale ({lastCoordinates})...");
+        }
+        catch (JSException ex)
+        {
+            errorMessage = $"Impossibile accedere alla posizione del browser: {ex.Message}";
+        }
+        finally
+        {
+            isLocating = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private Task CancelRequestAsync()
+    {
+        requestCts?.Cancel();
+        return Task.CompletedTask;
+    }
+
+    private async Task ExecuteRequestAsync(
+        Func<CancellationToken, Task<WeatherResult>> loader,
+        string startMessage)
+    {
+        CancelPendingRequest();
+
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(RequestTimeoutSeconds));
+        requestCts = cts;
+        isLoading = true;
+        statusMessage = startMessage;
+        errorMessage = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var result = await loader(cts.Token);
+            weatherResult = result;
+            city = result.Response.Location.Name;
+            statusMessage = result.FromCache
+                ? $"Servito dalla cache alle {result.RetrievedAt.ToLocalTime():t}."
+                : $"Aggiornato dall'API alle {result.RetrievedAt.ToLocalTime():t}.";
+        }
+        catch (WeatherServiceException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (OperationCanceledException)
+        {
+            statusMessage = "La richiesta è stata annullata.";
+        }
+        finally
+        {
+            isLoading = false;
+
+            if (ReferenceEquals(requestCts, cts))
+            {
+                requestCts = null;
+            }
+
+            cts.Dispose();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void CancelPendingRequest()
+    {
+        if (requestCts is { IsCancellationRequested: false })
+        {
+            requestCts.Cancel();
+        }
+    }
+
+    private sealed record BrowserCoordinates(
+        [property: JsonPropertyName("latitude")] double Latitude,
+        [property: JsonPropertyName("longitude")] double Longitude,
+        [property: JsonPropertyName("accuracy")] double? Accuracy);
 }
-} 

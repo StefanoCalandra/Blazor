@@ -4,21 +4,27 @@ using BlazorWeatherApp.Services;
 using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Aggiunge i servizi al contenitore.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("WeatherApi"));
-builder.Services.AddHttpClient<WeatherService>((sp, client) =>{
+builder.Services.AddOptions<WeatherApiOptions>()
+    .Bind(builder.Configuration.GetSection("WeatherApi"))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IValidateOptions<WeatherApiOptions>, WeatherApiOptionsValidator>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<WeatherService>((sp, client) =>
+{
     var options = sp.GetRequiredService<IOptions<WeatherApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
 });
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configura la pipeline delle richieste HTTP.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // Il valore HSTS predefinito è 30 giorni. Per gli scenari di produzione puoi modificarlo: vedi https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
