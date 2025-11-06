@@ -2,14 +2,14 @@
 @rendermode InteractiveServer
 @inject ProtectedLocalStorage LocalStorage
 
-<h3 class="mb-3">Todo (@ActiveCount active)</h3>
-<p class="text-muted">Tasks now persist to protected browser storage, include due dates, and support tag-based organization.</p>
+<h3 class="mb-3">Attività (@ActiveCount attive)</h3>
+<p class="text-muted">Le attività ora restano salvate nell'archiviazione protetta del browser, includono date di scadenza e supportano l'organizzazione tramite tag.</p>
 
 @if (isLoading)
 {
     <div class="alert alert-info d-flex align-items-center gap-2" role="status">
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        <span>Loading saved tasks...</span>
+        <span>Caricamento delle attività salvate...</span>
     </div>
 }
 else
@@ -23,19 +23,19 @@ else
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
-                    <label class="form-label" for="newTodo">Task</label>
-                    <input id="newTodo" class="form-control" placeholder="Plan sprint demo" @bind="newTodo" @bind:event="oninput" />
+                    <label class="form-label" for="newTodo">Attività</label>
+                    <input id="newTodo" class="form-control" placeholder="Pianifica demo di sprint" @bind="newTodo" @bind:event="oninput" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="dueDate">Due date</label>
+                    <label class="form-label" for="dueDate">Data di scadenza</label>
                     <input id="dueDate" type="date" class="form-control" @bind="newDueDate" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="tags">Tags (comma separated)</label>
-                    <input id="tags" class="form-control" placeholder="team,frontend" @bind="newTags" @bind:event="oninput" />
+                    <label class="form-label" for="tags">Tag (separati da virgola)</label>
+                    <input id="tags" class="form-control" placeholder="squadra,interfaccia" @bind="newTags" @bind:event="oninput" />
                 </div>
                 <div class="col-md-1 d-grid">
-                    <button class="btn btn-primary" @onclick="AddTodoAsync" disabled="@IsAddDisabled">Add</button>
+                    <button class="btn btn-primary" @onclick="AddTodoAsync" disabled="@IsAddDisabled">Aggiungi</button>
                 </div>
             </div>
         </div>
@@ -43,9 +43,9 @@ else
 
     <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
         <div class="d-flex align-items-center gap-2">
-            <label class="form-label mb-0" for="tagFilter">Filter by tag</label>
+            <label class="form-label mb-0" for="tagFilter">Filtra per tag</label>
             <select id="tagFilter" class="form-select form-select-sm w-auto" @bind="selectedTag">
-                <option value="">All</option>
+                <option value="">Tutti</option>
                 @foreach (var tag in AvailableTags)
                 {
                     <option value="@tag">@tag</option>
@@ -53,17 +53,17 @@ else
             </select>
         </div>
         <div class="ms-auto d-flex align-items-center gap-2">
-            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearCompletedAsync" disabled="@(!todoItems.Any(item => item.IsDone))">Clear completed</button>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearCompletedAsync" disabled="@(!todoItems.Any(item => item.IsDone))">Pulisci completati</button>
             @if (lastSavedAt is not null)
             {
-                <span class="text-muted small">Saved @lastSavedAt.Value.ToLocalTime():t</span>
+                <span class="text-muted small">Salvato @lastSavedAt.Value.ToLocalTime():t</span>
             }
         </div>
     </div>
 
     @if (FilteredTodos.Count == 0)
     {
-        <p class="text-muted">No tasks to show. Add a new item or adjust the tag filter.</p>
+        <p class="text-muted">Nessuna attività da mostrare. Aggiungi un nuovo elemento o modifica il filtro dei tag.</p>
     }
     else
     {
@@ -95,26 +95,26 @@ else
                                 <div class="text-end">
                                     @if (todo.DueDate is not null)
                                     {
-                                        <span class="badge @(overdue ? "bg-danger" : dueSoon ? "bg-warning text-dark" : "bg-info text-dark")">Due @todo.DueDate.Value.ToString("MMM d")</span>
+                                        <span class="badge @(overdue ? "bg-danger" : dueSoon ? "bg-warning text-dark" : "bg-info text-dark")">Scadenza @todo.DueDate.Value.ToString("d MMM")</span>
                                     }
                                 </div>
                             </div>
                             <div class="small text-muted mt-1">
                                 @if (todo.IsDone && todo.CompletedAt is not null)
                                 {
-                                    <span>Completed @todo.CompletedAt.Value.ToLocalTime():g</span>
+                                    <span>Completata @todo.CompletedAt.Value.ToLocalTime():g</span>
                                 }
                                 else if (overdue)
                                 {
-                                    <span>Overdue – take action soon.</span>
+                                    <span>In ritardo – intervieni al più presto.</span>
                                 }
                                 else if (dueSoon)
                                 {
-                                    <span>Coming up soon. Plan your time.</span>
+                                    <span>In arrivo a breve. Organizza il tuo tempo.</span>
                                 }
                             </div>
                         </div>
-                        <button class="btn btn-link text-danger p-0" title="Delete task" @onclick="() => DeleteTodoAsync(todo)">
+                        <button class="btn btn-link text-danger p-0" title="Elimina attività" @onclick="() => DeleteTodoAsync(todo)">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -125,11 +125,11 @@ else
         @if (UpcomingDueSoon.Count > 0)
         {
             <div class="alert alert-warning" role="alert">
-                <strong>Upcoming:</strong>
+                <strong>In arrivo:</strong>
                 @for (var i = 0; i < UpcomingDueSoon.Count; i++)
                 {
                     var item = UpcomingDueSoon[i];
-                    <span>@item.Title (@item.DueDate!.Value.ToString("MMM d"))</span>
+                    <span>@item.Title (@item.DueDate!.Value.ToString("d MMM"))</span>
                     if (i < UpcomingDueSoon.Count - 1)
                     {
                         <span>, </span>
@@ -185,7 +185,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Unable to restore saved tasks: {ex.Message}";
+            errorMessage = $"Impossibile ripristinare le attività salvate: {ex.Message}";
             todoItems = SeedTasks();
             await PersistAsync();
         }
@@ -247,20 +247,20 @@ else
     {
         new TodoItem
         {
-            Title = "Study C#",
+            Title = "Studiare C#",
             DueDate = DateTime.Today.AddDays(1),
-            Tags = new List<string> { "learning", "backend" }
+            Tags = new List<string> { "studio", "back-end" }
         },
         new TodoItem
         {
-            Title = "Sketch dashboard layout",
+            Title = "Abbozzare layout dashboard",
             DueDate = DateTime.Today.AddDays(2),
-            Tags = new List<string> { "design" }
+            Tags = new List<string> { "progettazione" }
         },
         new TodoItem
         {
-            Title = "Plan Blazor demo",
-            Tags = new List<string> { "blazor", "demo" }
+            Title = "Pianificare demo Blazor",
+            Tags = new List<string> { "blazor", "dimostrazione" }
         }
     };
 

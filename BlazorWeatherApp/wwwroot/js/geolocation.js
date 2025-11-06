@@ -2,7 +2,7 @@ window.appGeo = window.appGeo || {
     getCurrentPosition: () => {
         return new Promise((resolve, reject) => {
             if (!('geolocation' in navigator)) {
-                reject('Geolocation is not supported by this browser.');
+                reject('La geolocalizzazione non è supportata da questo browser.');
                 return;
             }
 
@@ -14,16 +14,16 @@ window.appGeo = window.appGeo || {
                 (error) => {
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            reject('Permission to access location was denied.');
+                            reject('Il permesso di accedere alla posizione è stato negato.');
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            reject('Location information is unavailable.');
+                            reject('Le informazioni sulla posizione non sono disponibili.');
                             break;
                         case error.TIMEOUT:
-                            reject('Timed out while retrieving location.');
+                            reject('Tempo scaduto durante il recupero della posizione.');
                             break;
                         default:
-                            reject('Unable to determine your location.');
+                            reject('Impossibile determinare la tua posizione.');
                             break;
                     }
                 },

@@ -1,17 +1,17 @@
 @page "/meal-planner"
 
-<PageTitle>Meal planner</PageTitle>
+<PageTitle>Pianificatore pasti</PageTitle>
 
 <div class="container py-4">
     <div class="row g-4">
         <div class="col-xxl-4">
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Pantry inventory</span>
-                    <span class="badge bg-primary">@PantryCoveragePercent% stocked</span>
+                    <span>Dispensa</span>
+                    <span class="badge bg-primary">@PantryCoveragePercent% rifornita</span>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small">Toggle the ingredients you have on hand to see how it affects the weekly plan and recipe suggestions.</p>
+                    <p class="text-muted small">Attiva o disattiva gli ingredienti che hai a disposizione per vedere come cambia il piano settimanale e i suggerimenti di ricette.</p>
                     <ul class="list-group list-group-flush">
                         @foreach (var item in pantryItems)
                         {
@@ -30,9 +30,9 @@
             </div>
 
             <div class="card shadow-sm mt-4">
-                <div class="card-header">Meal focus</div>
+                <div class="card-header">Focus del pasto</div>
                 <div class="card-body">
-                    <p class="text-muted small mb-2">Select a focus to personalize recommendations. Balanced recipes are always considered to keep variety.</p>
+                    <p class="text-muted small mb-2">Scegli un focus per personalizzare i suggerimenti. Le ricette bilanciate restano sempre considerate per mantenere varietà.</p>
                     <select class="form-select"
                             @bind="selectedFocus"
                             @bind:event="onchange"
@@ -50,33 +50,33 @@
         <div class="col-xxl-8">
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Weekly dinner plan</span>
+                    <span>Piano cene settimanale</span>
                     <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary" @onclick="ShuffleMealPlan">Shuffle ideas</button>
-                        <button class="btn btn-outline-secondary" @onclick="ResetPantry">Reset pantry</button>
+                        <button class="btn btn-outline-primary" @onclick="ShuffleMealPlan">Mescola idee</button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetPantry">Reimposta dispensa</button>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th scope="col">Day</th>
-                                    <th scope="col">Meal</th>
-                                    <th scope="col">Main</th>
-                                    <th scope="col">Pairing</th>
-                                    <th scope="col">Notes</th>
+                                    <th scope="col">Giorno</th>
+                                    <th scope="col">Pasto</th>
+                                    <th scope="col">Portata principale</th>
+                                    <th scope="col">Abbinamento</th>
+                                    <th scope="col">Note</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var entry in mealPlan)
                                 {
                                     <tr>
-                                        <th scope="row">@entry.Day</th>
+                                        <th scope="row">@FormatDay(entry.Day)</th>
                                         <td>@entry.MealType</td>
                                         <td>
                                             <div class="fw-semibold">@entry.Main</div>
-                                            <span class="badge @(entry.PantryReady ? "bg-success" : "bg-warning text-dark")">@(entry.PantryReady ? "Pantry ready" : "Missing items")</span>
+                                            <span class="badge @(entry.PantryReady ? "bg-success" : "bg-warning text-dark")">@(entry.PantryReady ? "Dispensa pronta" : "Ingredienti mancanti")</span>
                                         </td>
                                         <td>@entry.Side</td>
                                         <td class="small text-muted">@entry.Note</td>
@@ -90,13 +90,13 @@
 
             <div class="card shadow-sm mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Smart recipe suggestions</span>
-                    <span class="badge bg-secondary">@recipeSuggestions.Count suggestion@(recipeSuggestions.Count == 1 ? string.Empty : "s")</span>
+                    <span>Suggerimenti intelligenti di ricette</span>
+                    <span class="badge bg-secondary">@recipeSuggestions.Count suggeriment@(recipeSuggestions.Count == 1 ? "o" : "i")</span>
                 </div>
                 <div class="card-body">
                     @if (recipeSuggestions.Count == 0)
                     {
-                        <p class="text-muted mb-0">Add a few more pantry staples or adjust the focus to unlock tailored recipes.</p>
+                        <p class="text-muted mb-0">Aggiungi qualche ingrediente base alla dispensa o modifica il focus per ottenere ricette su misura.</p>
                     }
                     else
                     {
@@ -108,20 +108,20 @@
                                         <div>
                                             <h3 class="h5 mb-1">@suggestion.Name</h3>
                                             <p class="text-muted small mb-2">@suggestion.Summary</p>
-                                            <p class="mb-1"><strong>Ready in:</strong> @suggestion.ReadyIn</p>
-                                            <p class="mb-1"><strong>Pair with:</strong> @suggestion.SuggestedSide</p>
+                                            <p class="mb-1"><strong>Pronto in:</strong> @suggestion.ReadyIn</p>
+                                            <p class="mb-1"><strong>Abbina con:</strong> @suggestion.SuggestedSide</p>
                                         </div>
-                                        <span class="badge @(suggestion.IsPantryReady ? "bg-success" : "bg-warning text-dark")">@suggestion.CoveragePercent% pantry match</span>
+                                        <span class="badge @(suggestion.IsPantryReady ? "bg-success" : "bg-warning text-dark")">@suggestion.CoveragePercent% compatibilità dispensa</span>
                                     </div>
                                     <p class="mb-0 small">
-                                        <strong>Pantry check:</strong>
+                                        <strong>Controllo dispensa:</strong>
                                         @if (suggestion.IsPantryReady)
                                         {
-                                            <span>Everything you need is already stocked.</span>
+                                            <span>Hai già tutto l'occorrente.</span>
                                         }
                                         else
                                         {
-                                            <span>Missing @string.Join(", ", suggestion.MissingIngredients).</span>
+                                            <span>Mancano @string.Join(", ", suggestion.MissingIngredients).</span>
                                         }
                                     </p>
                                 </div>
@@ -135,95 +135,97 @@
 </div>
 
 @code {
+    private static readonly System.Globalization.CultureInfo ItalianCulture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+
     private readonly List<PantryItem> pantryItems =
     [
-        new("Chicken Breast", "Protein", true),
-        new("Salmon Fillets", "Protein", true),
-        new("Chickpeas", "Plant protein", true),
-        new("Sweet Potatoes", "Produce", true),
-        new("Quinoa", "Grains", true),
-        new("Brown Rice", "Grains", false),
-        new("Spinach", "Produce", false),
-        new("Greek Yogurt", "Dairy", true),
-        new("Avocado", "Produce", false),
-        new("Whole Wheat Tortillas", "Pantry", true)
+        new("Petto di pollo", "Proteine", true),
+        new("Filetti di salmone", "Proteine", true),
+        new("Ceci", "Proteine vegetali", true),
+        new("Patate dolci", "Prodotti freschi", true),
+        new("Quinoa", "Cereali", true),
+        new("Riso integrale", "Cereali", false),
+        new("Spinaci", "Prodotti freschi", false),
+        new("Yogurt greco", "Latticini", true),
+        new("Avocado", "Prodotti freschi", false),
+        new("Tortillas integrali", "Dispensa", true)
     ];
 
     private readonly List<MealPlanEntry> mealPlan =
     [
-        new(DayOfWeek.Monday, "Dinner", "Herb roasted chicken", "Garlic green beans"),
-        new(DayOfWeek.Tuesday, "Dinner", "Salmon with citrus glaze", "Roasted asparagus"),
-        new(DayOfWeek.Wednesday, "Dinner", "Chickpea power bowls", "Toasted pita"),
-        new(DayOfWeek.Thursday, "Dinner", "Stuffed sweet potatoes", "Mixed greens"),
-        new(DayOfWeek.Friday, "Dinner", "Quinoa taco night", "Fire-roasted corn"),
-        new(DayOfWeek.Saturday, "Dinner", "Grilled flatbreads", "Greek salad"),
-        new(DayOfWeek.Sunday, "Dinner", "Slow cooker stew", "Crusty bread")
+        new(DayOfWeek.Monday, "Cena", "Pollo arrosto alle erbe", "Fagiolini all'aglio"),
+        new(DayOfWeek.Tuesday, "Cena", "Salmone con glassa agli agrumi", "Asparagi arrosto"),
+        new(DayOfWeek.Wednesday, "Cena", "Bowl energetiche ai ceci", "Pita tostato"),
+        new(DayOfWeek.Thursday, "Cena", "Patate dolci ripiene", "Insalata mista"),
+        new(DayOfWeek.Friday, "Cena", "Serata tacos di quinoa", "Mais arrostito"),
+        new(DayOfWeek.Saturday, "Cena", "Focacce alla griglia", "Insalata greca"),
+        new(DayOfWeek.Sunday, "Cena", "Spezzatino in slow cooker", "Pane croccante")
     ];
 
     private readonly List<RecipeDefinition> recipeLibrary =
     [
         new()
         {
-            Name = "Lemon herb chicken",
+            Name = "Pollo al limone ed erbe",
             Focus = MealFocus.Balanced,
-            ReadyIn = "35 minutes",
-            Summary = "Roasted chicken breasts brightened with lemon zest and thyme.",
-            Ingredients = new[] { "Chicken Breast", "Lemon", "Thyme", "Garlic" },
-            SuggestedSide = "Garlic green beans"
+            ReadyIn = "35 minuti",
+            Summary = "Petti di pollo arrosto ravvivati da scorza di limone e timo.",
+            Ingredients = new[] { "Petto di pollo", "Limone", "Timo", "Aglio" },
+            SuggestedSide = "Fagiolini all'aglio"
         },
         new()
         {
-            Name = "Maple glazed salmon",
+            Name = "Salmone glassato all'acero",
             Focus = MealFocus.HighProtein,
-            ReadyIn = "25 minutes",
-            Summary = "Salmon fillets roasted with maple, soy, and ginger.",
-            Ingredients = new[] { "Salmon Fillets", "Maple Syrup", "Soy Sauce", "Ginger" },
-            SuggestedSide = "Sesame snap peas"
+            ReadyIn = "25 minuti",
+            Summary = "Filetti di salmone al forno con sciroppo d'acero, soia e zenzero.",
+            Ingredients = new[] { "Filetti di salmone", "Sciroppo d'acero", "Salsa di soia", "Zenzero" },
+            SuggestedSide = "Taccole al sesamo"
         },
         new()
         {
-            Name = "Chickpea shawarma bowls",
+            Name = "Bowl shawarma di ceci",
             Focus = MealFocus.Vegetarian,
-            ReadyIn = "30 minutes",
-            Summary = "Sheet-pan chickpeas with warm spices served over quinoa.",
-            Ingredients = new[] { "Chickpeas", "Quinoa", "Spinach", "Cucumber" },
-            SuggestedSide = "Toasted pita"
+            ReadyIn = "30 minuti",
+            Summary = "Ceci al forno con spezie calde serviti sulla quinoa.",
+            Ingredients = new[] { "Ceci", "Quinoa", "Spinaci", "Cetriolo" },
+            SuggestedSide = "Pita tostato"
         },
         new()
         {
-            Name = "Sweet potato tacos",
+            Name = "Tacos di patate dolci",
             Focus = MealFocus.Balanced,
-            ReadyIn = "40 minutes",
-            Summary = "Roasted sweet potatoes tucked into tortillas with creamy slaw.",
-            Ingredients = new[] { "Sweet Potatoes", "Whole Wheat Tortillas", "Greek Yogurt", "Cabbage" },
-            SuggestedSide = "Fire-roasted corn"
+            ReadyIn = "40 minuti",
+            Summary = "Patate dolci arrosto avvolte nelle tortillas con insalata cremosa.",
+            Ingredients = new[] { "Patate dolci", "Tortillas integrali", "Yogurt greco", "Cavolo" },
+            SuggestedSide = "Mais arrostito"
         },
         new()
         {
-            Name = "Citrus shrimp bowls",
+            Name = "Bowl di gamberi agrumati",
             Focus = MealFocus.HighProtein,
-            ReadyIn = "35 minutes",
-            Summary = "Bright shrimp bowls layered with quinoa and citrus vinaigrette.",
-            Ingredients = new[] { "Shrimp", "Quinoa", "Avocado", "Orange" },
-            SuggestedSide = "Charred broccoli"
+            ReadyIn = "35 minuti",
+            Summary = "Ciotole vivaci di gamberi con quinoa e vinaigrette agli agrumi.",
+            Ingredients = new[] { "Gamberi", "Quinoa", "Avocado", "Arancia" },
+            SuggestedSide = "Broccoli grigliati"
         },
         new()
         {
-            Name = "Mediterranean flatbreads",
+            Name = "Focacce mediterranee",
             Focus = MealFocus.Vegetarian,
-            ReadyIn = "20 minutes",
-            Summary = "Quick toasted flatbreads with hummus, tomatoes, and feta.",
-            Ingredients = new[] { "Whole Wheat Tortillas", "Chickpeas", "Tomatoes", "Spinach" },
-            SuggestedSide = "Greek salad"
+            ReadyIn = "20 minuti",
+            Summary = "Focacce tostate con hummus, pomodori e feta.",
+            Ingredients = new[] { "Tortillas integrali", "Ceci", "Pomodori", "Spinaci" },
+            SuggestedSide = "Insalata greca"
         },
         new()
         {
-            Name = "Slow cooker lentil stew",
+            Name = "Zuppa di lenticchie in slow cooker",
             Focus = MealFocus.FamilyStyle,
-            ReadyIn = "6 hours",
-            Summary = "Comforting lentils simmered with vegetables for make-ahead ease.",
-            Ingredients = new[] { "Lentils", "Carrots", "Celery", "Onion" },
-            SuggestedSide = "Crusty bread"
+            ReadyIn = "6 ore",
+            Summary = "Lenticchie confortanti stufate con verdure per una preparazione anticipata.",
+            Ingredients = new[] { "Lenticchie", "Carote", "Sedano", "Cipolla" },
+            SuggestedSide = "Pane croccante"
         }
     ];
 
@@ -235,10 +237,10 @@
 
     private string FocusDescription => selectedFocus switch
     {
-        MealFocus.HighProtein => "High-protein meals prioritize lean meats and hearty legumes.",
-        MealFocus.Vegetarian => "Vegetarian ideas spotlight plants without sacrificing flavor.",
-        MealFocus.FamilyStyle => "Family-style meals scale easily and welcome leftovers.",
-        _ => "Balanced keeps variety while leaning on pantry-friendly staples."
+        MealFocus.HighProtein => "I pasti ad alto contenuto proteico privilegiano carni magre e legumi sostanziosi.",
+        MealFocus.Vegetarian => "Le proposte vegetariane valorizzano gli ingredienti vegetali senza rinunciare al gusto.",
+        MealFocus.FamilyStyle => "I piatti formato famiglia si moltiplicano facilmente e accolgono anche gli avanzi.",
+        _ => "Il profilo bilanciato mantiene varietà puntando su ingredienti sempre in dispensa."
     };
 
     protected override void OnInitialized()
@@ -349,21 +351,24 @@
         }
     }
 
+    private static string FormatDay(DayOfWeek day) => ItalianCulture.TextInfo.ToTitleCase(ItalianCulture.DateTimeFormat.GetDayName(day));
+
     private static void ApplySuggestion(MealPlanEntry entry, RecipeSuggestion suggestion)
     {
         entry.Main = suggestion.Name;
         entry.Side = suggestion.SuggestedSide;
         entry.PantryReady = suggestion.IsPantryReady;
         entry.Note = suggestion.IsPantryReady
-            ? $"Ready in {suggestion.ReadyIn} with ingredients on hand."
-            : $"Missing: {string.Join(", ", suggestion.MissingIngredients)}";
+            ? $"Pronto in {suggestion.ReadyIn} con gli ingredienti già disponibili."
+            : $"Mancano: {string.Join(", ", suggestion.MissingIngredients)}";
     }
 
     private string FormatFocus(MealFocus focus) => focus switch
     {
-        MealFocus.HighProtein => "High protein",
-        MealFocus.FamilyStyle => "Family style",
-        _ => focus.ToString()
+        MealFocus.HighProtein => "Alto contenuto proteico",
+        MealFocus.FamilyStyle => "Stile famiglia",
+        MealFocus.Vegetarian => "Vegetariano",
+        _ => "Bilanciato"
     };
 
     private sealed record PantryItem(string Name, string Category, bool DefaultInStock)

@@ -10,8 +10,8 @@ public class WeatherForecastService
 {
     private static readonly string[] Summaries =
     [
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm",
-        "Balmy", "Hot", "Sweltering", "Scorching"
+        "Gelido", "Pungente", "Freddo", "Fresco", "Mite", "Caldo",
+        "Tiepido", "Afoso", "Bollente", "Rovente"
     ];
 
     public async Task<IReadOnlyList<WeatherForecast>> GetForecastAsync(CancellationToken cancellationToken = default)

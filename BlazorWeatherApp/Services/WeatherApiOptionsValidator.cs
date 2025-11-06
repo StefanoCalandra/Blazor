@@ -12,16 +12,16 @@ public class WeatherApiOptionsValidator : IValidateOptions<WeatherApiOptions>
 
         if (string.IsNullOrWhiteSpace(options.ApiKey))
         {
-            failures.Add("WeatherApi:ApiKey must be provided.");
+            failures.Add("È necessario impostare WeatherApi:ApiKey.");
         }
 
         if (string.IsNullOrWhiteSpace(options.BaseUrl))
         {
-            failures.Add("WeatherApi:BaseUrl must be provided.");
+            failures.Add("È necessario impostare WeatherApi:BaseUrl.");
         }
         else if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _))
         {
-            failures.Add("WeatherApi:BaseUrl must be a valid absolute URI.");
+            failures.Add("WeatherApi:BaseUrl deve essere un URI assoluto valido.");
         }
 
         return failures.Count > 0

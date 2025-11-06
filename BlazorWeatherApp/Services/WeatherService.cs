@@ -43,7 +43,7 @@ public class WeatherService
     {
         if (string.IsNullOrWhiteSpace(city))
         {
-            throw new WeatherServiceException("Please provide a city before requesting the forecast.");
+            throw new WeatherServiceException("Fornisci una città prima di richiedere le previsioni.");
         }
 
         var normalizedCity = city.Trim();
@@ -63,7 +63,7 @@ public class WeatherService
     {
         if (!IsValidLatitude(coordinates.Latitude) || !IsValidLongitude(coordinates.Longitude))
         {
-            throw new WeatherServiceException("Coordinates must be within valid latitude/longitude ranges.");
+            throw new WeatherServiceException("Le coordinate devono rientrare negli intervalli validi di latitudine/longitudine.");
         }
 
         var cacheKey = CoordinateCacheKeyPrefix + FormattableString.Invariant($"{coordinates.Latitude:F4}:{coordinates.Longitude:F4}");
@@ -84,7 +84,7 @@ public class WeatherService
     {
         if (string.IsNullOrWhiteSpace(_options.DefaultCity))
         {
-            throw new WeatherServiceException("No default city is configured. Provide a city or update WeatherApi:DefaultCity.");
+            throw new WeatherServiceException("Non è configurata alcuna città predefinita. Specifica una città oppure aggiorna WeatherApi:DefaultCity.");
         }
 
         return GetWeatherAsync(_options.DefaultCity, forceRefresh, cancellationToken);
@@ -115,7 +115,7 @@ public class WeatherService
 
             if (response is null)
             {
-                throw new WeatherServiceException("The weather service returned an empty response. Please try again.");
+                throw new WeatherServiceException("Il servizio meteo ha restituito una risposta vuota. Riprova.");
             }
 
             return response;
@@ -126,23 +126,23 @@ public class WeatherService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(ex, "Weather API request failed for {RequestUri}", requestUri);
-            throw new WeatherServiceException("Unable to reach the weather service. Check your network connection and API key.", ex);
+            _logger.LogWarning(ex, "Richiesta all'API meteo non riuscita per {RequestUri}", requestUri);
+            throw new WeatherServiceException("Impossibile raggiungere il servizio meteo. Controlla la connessione di rete e la chiave API.", ex);
         }
         catch (NotSupportedException ex)
         {
-            _logger.LogError(ex, "Unsupported content type returned for {RequestUri}", requestUri);
-            throw new WeatherServiceException("The weather service returned an unsupported payload.", ex);
+            _logger.LogError(ex, "Tipo di contenuto non supportato restituito per {RequestUri}", requestUri);
+            throw new WeatherServiceException("Il servizio meteo ha restituito un payload non supportato.", ex);
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Invalid JSON returned for {RequestUri}", requestUri);
-            throw new WeatherServiceException("The weather service returned malformed data.", ex);
+            _logger.LogError(ex, "JSON non valido restituito per {RequestUri}", requestUri);
+            throw new WeatherServiceException("Il servizio meteo ha restituito dati non validi.", ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching weather data for {RequestUri}", requestUri);
-            throw new WeatherServiceException("An unexpected error occurred while retrieving the forecast.", ex);
+            _logger.LogError(ex, "Errore imprevisto durante il recupero dei dati meteo per {RequestUri}", requestUri);
+            throw new WeatherServiceException("Si è verificato un errore imprevisto durante il recupero delle previsioni.", ex);
         }
     }
 

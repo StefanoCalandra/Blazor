@@ -7,7 +7,7 @@ public class WeatherApiOptions
     public required string ApiKey { get; set; }
 
     /// <summary>
-    /// Optional default city used when the user has not provided an explicit search.
+    /// Città predefinita facoltativa usata quando l'utente non ha specificato una ricerca esplicita.
     /// </summary>
     public string? DefaultCity { get; set; }
 }
